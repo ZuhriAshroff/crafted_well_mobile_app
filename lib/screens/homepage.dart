@@ -1,9 +1,18 @@
+// lib/screens/homepage.dart
 import 'package:crafted_well_mobile_app/theme/theme.dart';
+import 'package:crafted_well_mobile_app/widgets/footer.dart';
 import 'package:crafted_well_mobile_app/widgets/header.dart';
 import 'package:flutter/material.dart';
 
 class HomePage extends StatelessWidget {
-  const HomePage({Key? key}) : super(key: key);
+  final Function(ThemeMode) onThemeModeChanged;
+  final ThemeMode currentThemeMode;
+
+  const HomePage({
+    Key? key,
+    required this.onThemeModeChanged,
+    required this.currentThemeMode,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -19,8 +28,11 @@ class HomePage extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Header Section
-                  const HeaderSection(),
+                  // Updated HeaderSection with theme toggle
+                  HeaderSection(
+                    onThemeModeChanged: onThemeModeChanged,
+                    currentThemeMode: currentThemeMode,
+                  ),
 
                   const SizedBox(height: 20),
 
@@ -76,6 +88,7 @@ class HomePage extends StatelessWidget {
           ),
         ),
       ),
+      bottomNavigationBar: const BottomNavigation(),
     );
   }
 
@@ -112,8 +125,8 @@ class HomePage extends StatelessWidget {
           ),
           Image.asset(
             'assets/Dark Glass Bottle Mocha 1.png',
-            width: 150,
-            height: 150,
+            width: 900,
+            height: 900,
           ),
         ],
       ),
