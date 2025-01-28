@@ -1,4 +1,3 @@
-// lib/main.dart
 import 'package:crafted_well_mobile_app/screens/homepage.dart';
 import 'package:crafted_well_mobile_app/theme/theme.dart';
 import 'package:flutter/material.dart';
