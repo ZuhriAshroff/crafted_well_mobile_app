@@ -1,5 +1,11 @@
+import 'package:crafted_well_mobile_app/screens/homepage.dart';
+import 'package:crafted_well_mobile_app/screens/product_list_screen.dart';
 import 'package:crafted_well_mobile_app/theme/theme.dart';
+import 'package:crafted_well_mobile_app/utils/navigation_state.dart';
+import 'package:crafted_well_mobile_app/widgets/popup_widget.dart';
+import 'package:crafted_well_mobile_app/utils/user_manager.dart';
 import 'package:flutter/material.dart';
+import 'package:crafted_well_mobile_app/main.dart';
 
 class AuthScreen extends StatefulWidget {
   final int initialTabIndex;
@@ -41,12 +47,33 @@ class _AuthScreenState extends State<AuthScreen>
         elevation: 0,
         leading: IconButton(
           icon: Icon(
-            Icons.arrow_back,
+            Icons.home,
             color: Theme.of(context).brightness == Brightness.dark
                 ? Colors.white
                 : Colors.black87,
           ),
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () {
+            // Using MaterialApp's default theme mode
+            final materialApp =
+                context.findAncestorWidgetOfExactType<MaterialApp>();
+            Navigator.of(context).pushAndRemoveUntil(
+              MaterialPageRoute(
+                builder: (context) => HomePage(
+                  currentThemeMode: materialApp?.themeMode ?? ThemeMode.system,
+                  onThemeModeChanged: (ThemeMode mode) {
+                    // Find the CraftedWell ancestor and call its setState
+                    final craftedWellState =
+                        context.findAncestorStateOfType<State<CraftedWell>>();
+                    if (craftedWellState != null &&
+                        craftedWellState is State<CraftedWell>) {
+                      (craftedWellState as dynamic).toggleTheme(mode);
+                    }
+                  },
+                ),
+              ),
+              (route) => false,
+            );
+          },
         ),
       ),
       body: Container(
@@ -119,6 +146,65 @@ class _LoginTabState extends State<LoginTab> {
     super.dispose();
   }
 
+// In _LoginTabState
+  void _handleLogin() {
+    if (_formKey.currentState?.validate() ?? false) {
+      final success = UserManager.login(
+        _emailController.text,
+        _passwordController.text,
+      );
+
+      if (success) {
+        StatusPopup.show(
+          context,
+          message: 'Welcome back! Login successful.',
+          isSuccess: true,
+          onClose: () {
+            // Check if user came from survey
+            if (NavigationState.hasCompletedSurvey) {
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const ProductListScreen(),
+                ),
+                (route) => false,
+              );
+            } else {
+              // Regular homepage navigation
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => HomePage(
+                    currentThemeMode:
+                        Theme.of(context).brightness == Brightness.dark
+                            ? ThemeMode.dark
+                            : ThemeMode.light,
+                    onThemeModeChanged: (ThemeMode mode) {
+                      final craftedWellState =
+                          context.findAncestorStateOfType<State<CraftedWell>>();
+                      if (craftedWellState != null &&
+                          craftedWellState is State<CraftedWell>) {
+                        (craftedWellState as dynamic).toggleTheme(mode);
+                      }
+                    },
+                  ),
+                ),
+                (route) => false,
+              );
+            }
+          },
+        );
+      } else {
+        StatusPopup.show(
+          context,
+          message:
+              'Invalid credentials.\nUse: user@craftedwell.com\nPassword: password123',
+          isSuccess: false,
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
@@ -186,11 +272,7 @@ class _LoginTabState extends State<LoginTab> {
                 ),
                 const SizedBox(height: 24),
                 ElevatedButton(
-                  onPressed: () {
-                    if (_formKey.currentState?.validate() ?? false) {
-                      // Handle login logic
-                    }
-                  },
+                  onPressed: (_handleLogin),
                   style: ElevatedButton.styleFrom(
                     minimumSize: const Size(double.infinity, 50),
                     shape: RoundedRectangleBorder(
@@ -264,12 +346,104 @@ class _RegisterTabState extends State<RegisterTab> {
                   },
                 ),
                 const SizedBox(height: 16),
-                // ... Rest of the register form fields
-                // (Email, Password, Confirm Password)
+                TextFormField(
+                  controller: _emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  decoration: const InputDecoration(
+                    labelText: 'Email',
+                    prefixIcon: Icon(Icons.email_outlined),
+                    border: OutlineInputBorder(),
+                  ),
+                  validator: (value) {
+                    if (value?.isEmpty ?? true) {
+                      return 'Please enter your email';
+                    }
+                    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
+                        .hasMatch(value!)) {
+                      return 'Please enter a valid email';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _passwordController,
+                  obscureText: !_isPasswordVisible,
+                  decoration: InputDecoration(
+                    labelText: 'Password',
+                    prefixIcon: const Icon(Icons.lock_outline),
+                    border: const OutlineInputBorder(),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _isPasswordVisible
+                            ? Icons.visibility_off
+                            : Icons.visibility,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _isPasswordVisible = !_isPasswordVisible;
+                        });
+                      },
+                    ),
+                  ),
+                  validator: (value) {
+                    if (value?.isEmpty ?? true) {
+                      return 'Please enter your password';
+                    }
+                    if (value!.length < 6) {
+                      return 'Password must be at least 6 characters';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _confirmPasswordController,
+                  obscureText: !_isConfirmPasswordVisible,
+                  decoration: InputDecoration(
+                    labelText: 'Confirm Password',
+                    prefixIcon: const Icon(Icons.lock_outline),
+                    border: const OutlineInputBorder(),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _isConfirmPasswordVisible
+                            ? Icons.visibility_off
+                            : Icons.visibility,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _isConfirmPasswordVisible =
+                              !_isConfirmPasswordVisible;
+                        });
+                      },
+                    ),
+                  ),
+                  validator: (value) {
+                    if (value?.isEmpty ?? true) {
+                      return 'Please confirm your password';
+                    }
+                    if (value != _passwordController.text) {
+                      return 'Passwords do not match';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 24),
                 ElevatedButton(
                   onPressed: () {
                     if (_formKey.currentState?.validate() ?? false) {
-                      // Handle registration logic
+                      StatusPopup.show(
+                        context,
+                        message:
+                            'Registration successful!\nPlease login with demo credentials.',
+                        isSuccess: true,
+                        onClose: () {
+                          // Switch to login tab
+                          final authScreen = context
+                              .findAncestorStateOfType<_AuthScreenState>();
+                          authScreen?._tabController.animateTo(0);
+                        },
+                      );
                     }
                   },
                   style: ElevatedButton.styleFrom(
