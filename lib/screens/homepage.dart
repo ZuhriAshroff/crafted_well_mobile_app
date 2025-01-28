@@ -1,6 +1,7 @@
 // lib/screens/homepage.dart
+import 'package:crafted_well_mobile_app/screens/survey_screen_1.dart';
 import 'package:crafted_well_mobile_app/theme/theme.dart';
-import 'package:crafted_well_mobile_app/widgets/footer.dart';
+import 'package:crafted_well_mobile_app/widgets/bottom_nav.dart';
 import 'package:crafted_well_mobile_app/widgets/header.dart';
 import 'package:flutter/material.dart';
 
@@ -57,7 +58,14 @@ class HomePage extends StatelessWidget {
                     child: Hero(
                       tag: 'blend_button',
                       child: ElevatedButton(
-                        onPressed: () {},
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const SurveyScreen1(),
+                            ),
+                          );
+                        },
                         style: ElevatedButton.styleFrom(
                           foregroundColor:
                               isDarkMode ? Colors.black : Colors.white,
