@@ -1,7 +1,12 @@
 import 'dart:math';
 
+import 'package:crafted_well_mobile_app/main.dart';
+import 'package:crafted_well_mobile_app/screens/homepage.dart';
+import 'package:crafted_well_mobile_app/screens/product_list_screen.dart';
 import 'package:crafted_well_mobile_app/screens/thank_you_screen.dart';
 import 'package:crafted_well_mobile_app/theme/theme.dart';
+import 'package:crafted_well_mobile_app/utils/navigation_state.dart';
+import 'package:crafted_well_mobile_app/utils/user_manager.dart';
 import 'package:crafted_well_mobile_app/widgets/bottom_nav.dart';
 import 'package:crafted_well_mobile_app/widgets/popup_widget.dart';
 import 'package:flutter/material.dart';
@@ -76,6 +81,40 @@ class _SurveyScreen3State extends State<SurveyScreen3> {
     final allAllergies = allergyCategories.keys.toList();
     final shuffledAllergies = List<String>.from(allAllergies)..shuffle();
     selectedAllergies.addAll(shuffledAllergies.take(2 + Random().nextInt(2)));
+  }
+
+// In SurveyScreen3's _handleNavigation method
+  void _handleNavigation() {
+    // Set survey completion state when survey is actually completed
+    NavigationState.hasCompletedSurvey = true;
+
+    StatusPopup.show(
+      context,
+      message: 'Your survey has been completed successfully!',
+      isSuccess: true,
+      onClose: () {
+        // Navigate based on login state
+        if (UserManager.isLoggedIn) {
+          // If logged in, go to products
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const ProductListScreen(),
+            ),
+            (route) => false,
+          );
+        } else {
+          // If not logged in, go to thank you screen
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const ThankYouScreen(),
+            ),
+            (route) => false,
+          );
+        }
+      },
+    );
   }
 
   @override
@@ -245,12 +284,7 @@ class _SurveyScreen3State extends State<SurveyScreen3> {
                             message: 'Your action was successful!',
                             isSuccess: true,
                             onClose: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const ThankYouScreen(),
-                                ),
-                              );
+                              _handleNavigation();
                             },
                           );
                         },

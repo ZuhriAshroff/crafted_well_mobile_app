@@ -1,7 +1,6 @@
-import 'package:crafted_well_mobile_app/theme/theme.dart';
-import 'package:crafted_well_mobile_app/utils/navigation_state.dart';
-import 'package:flutter/material.dart';
 import 'package:crafted_well_mobile_app/screens/auth_screen.dart';
+import 'package:crafted_well_mobile_app/theme/theme.dart';
+import 'package:flutter/material.dart';
 
 class ThankYouScreen extends StatelessWidget {
   const ThankYouScreen({Key? key}) : super(key: key);
@@ -11,11 +10,10 @@ class ThankYouScreen extends StatelessWidget {
     return Scaffold(
       body: Container(
         decoration: AppTheme.getGradientBackground(context),
+        constraints: const BoxConstraints.expand(),
         child: SafeArea(
           child: SingleChildScrollView(
-            // Add this
             child: ConstrainedBox(
-              // Add this
               constraints: BoxConstraints(
                 minHeight: MediaQuery.of(context).size.height -
                     MediaQuery.of(context).padding.top -
@@ -25,7 +23,7 @@ class ThankYouScreen extends StatelessWidget {
                 padding: const EdgeInsets.all(24.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween, // Add this
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     // Top section
                     Column(
@@ -81,7 +79,7 @@ class ThankYouScreen extends StatelessWidget {
                           ),
                         ),
 
-                        const SizedBox(height: 32), // Reduced from 40
+                        const SizedBox(height: 32),
 
                         Text(
                           'Thank You!',
@@ -93,7 +91,7 @@ class ThankYouScreen extends StatelessWidget {
                               ),
                         ),
 
-                        const SizedBox(height: 16), // Reduced from 20
+                        const SizedBox(height: 16),
 
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -107,7 +105,7 @@ class ThankYouScreen extends StatelessWidget {
                           ),
                         ),
 
-                        const SizedBox(height: 40), // Reduced from 60
+                        const SizedBox(height: 40),
                       ],
                     ),
 
@@ -118,15 +116,11 @@ class ThankYouScreen extends StatelessWidget {
                           width: double.infinity,
                           child: ElevatedButton(
                             onPressed: () {
-// In ThankYouScreen, before navigating to AuthScreen
                               Navigator.pushAndRemoveUntil(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) {
-                                    NavigationState.hasCompletedSurvey =
-                                        true; // Set the state
-                                    return const AuthScreen(initialTabIndex: 0);
-                                  },
+                                  builder: (context) =>
+                                      const AuthScreen(initialTabIndex: 0),
                                 ),
                                 (route) => false,
                               );
@@ -158,9 +152,7 @@ class ThankYouScreen extends StatelessWidget {
                             ),
                           ),
                         ),
-
-                        const SizedBox(height: 16), // Reduced from 20
-
+                        const SizedBox(height: 16),
                         Text(
                           'Your results will be sent to your email',
                           style:
