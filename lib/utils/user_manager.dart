@@ -1,7 +1,7 @@
 // user_manager.dart
 class UserManager {
   static const String defaultEmail = "user@craftedwell.com";
-  static const String defaultPassword = "1qaz!QAZ";
+  static const String defaultPassword = "qaz!QAZ";
 
   static bool isLoggedIn = false;
   static String? currentUserName;

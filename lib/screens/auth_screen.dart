@@ -198,7 +198,7 @@ class _LoginTabState extends State<LoginTab> {
         StatusPopup.show(
           context,
           message:
-              'Invalid credentials.\nUse: user@craftedwell.com\nPassword: password123',
+              'Invalid credentials.\nUse: user@craftedwell.com\nPassword: qaz!QAZ',
           isSuccess: false,
         );
       }
