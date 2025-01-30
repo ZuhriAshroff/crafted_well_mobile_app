@@ -29,7 +29,7 @@ class Product {
       usage:
           'Apply 2-3 drops to clean, damp skin morning and evening. Follow with moisturizer.',
       price: 45.99,
-      imageAsset: 'assets/Dark Glass Bottle Mocha 1.png',
+      imageAsset: 'assets/images/product-image-1.png',
       benefits: [
         'Deep hydration',
         'Reduces fine lines',

@@ -11,6 +11,7 @@ class AppTheme {
     fontSize: 32,
     fontWeight: FontWeight.bold,
     letterSpacing: -0.5,
+    fontFamily: 'Roboto',
   );
 
   static final TextStyle bodyText = TextStyle(
@@ -18,6 +19,7 @@ class AppTheme {
     fontWeight: FontWeight.normal,
     letterSpacing: 0.15,
     height: 1.5,
+    fontFamily: 'Roboto',
   );
 
   static ThemeData get lightTheme {
@@ -25,6 +27,7 @@ class AppTheme {
       brightness: Brightness.light,
       primaryColor: lightGradient[0],
       scaffoldBackgroundColor: Colors.white,
+      fontFamily: 'Roboto',
       textTheme: TextTheme(
         // Define the text theme using our custom styles
         displayLarge: mainHeading.copyWith(color: Colors.black87),
@@ -39,6 +42,7 @@ class AppTheme {
       brightness: Brightness.dark,
       primaryColor: darkGradient[0],
       scaffoldBackgroundColor: Colors.black,
+      fontFamily: 'Roboto',
       textTheme: TextTheme(
         // Define the text theme using our custom styles
         displayLarge: mainHeading.copyWith(color: Colors.white),

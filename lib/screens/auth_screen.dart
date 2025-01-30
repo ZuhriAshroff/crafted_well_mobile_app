@@ -84,7 +84,7 @@ class _AuthScreenState extends State<AuthScreen>
               if (!isLandscape) ...[
                 const SizedBox(height: 20),
                 Image.asset(
-                  'assets/Crafted Well Logo (2).png',
+                  'assets/images/Crafted Well Logo (2).png',
                   height: 80,
                 ),
                 const SizedBox(height: 20),

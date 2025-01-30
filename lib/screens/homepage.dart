@@ -18,85 +18,137 @@ class HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-
+    final isLandscape =
+        MediaQuery.of(context).orientation == Orientation.landscape;
     return Scaffold(
       body: Container(
         decoration: AppTheme.getGradientBackground(context),
+        constraints: const BoxConstraints.expand(),
         child: SafeArea(
-          child: SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Updated HeaderSection with theme toggle
-                  HeaderSection(
-                    onThemeModeChanged: onThemeModeChanged,
-                    currentThemeMode: currentThemeMode,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              return SingleChildScrollView(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    minHeight: constraints.maxHeight,
                   ),
-
-                  const SizedBox(height: 20),
-
-                  // Main heading
-                  Text(
-                    'Custom Skincare,\nPowered by Your\nAnswers',
-                    style: Theme.of(context).textTheme.displayLarge,
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  // Description text
-                  Text(
-                    'We listen to your unique skin story through a comprehensive survey, crafting precise wellness products that match your exact skin type, concerns, and lifestyle. Personalized skincare, tailored to you—because your skin deserves a solution as individual as you are.',
-                    style: Theme.of(context).textTheme.bodyLarge,
-                  ),
-
-                  const SizedBox(height: 32),
-
-                  // Action button with animation
-                  Center(
-                    child: Hero(
-                      tag: 'blend_button',
-                      child: ElevatedButton(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const SurveyScreen1(),
-                            ),
-                          );
-                        },
-                        style: ElevatedButton.styleFrom(
-                          foregroundColor:
-                              isDarkMode ? Colors.black : Colors.white,
-                          backgroundColor:
-                              isDarkMode ? Colors.white : Colors.black87,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 32,
-                            vertical: 16,
+                  child: IntrinsicHeight(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          // Updated HeaderSection with theme toggle
+                          HeaderSection(
+                            onThemeModeChanged: onThemeModeChanged,
+                            currentThemeMode: currentThemeMode,
                           ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(30),
+
+                          const SizedBox(height: 20),
+
+                          // Main content wrapped in an Expanded to use remaining space
+                          Expanded(
+                            child: isLandscape
+                                ? _buildLandscapeLayout(context, isDarkMode)
+                                : _buildPortraitLayout(context, isDarkMode),
                           ),
-                        ),
-                        child: const Text('Design My Unique Blend'),
+
+                          const SizedBox(height: 20),
+                        ],
                       ),
                     ),
                   ),
-
-                  const SizedBox(height: 40),
-
-                  // Circular image with animation
-                  Center(
-                    child: _buildCircularProductDisplay(isDarkMode),
-                  ),
-                ],
-              ),
-            ),
+                ),
+              );
+            },
           ),
         ),
       ),
       bottomNavigationBar: const BottomNavigation(),
+    );
+  }
+
+  Widget _buildPortraitLayout(BuildContext context, bool isDarkMode) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Text(
+          'Custom Skincare,\nPowered by Your\nAnswers',
+          style: Theme.of(context).textTheme.displayLarge,
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 24),
+        Text(
+          'We listen to your unique skin story through a comprehensive survey, crafting precise wellness products that match your exact skin type, concerns, and lifestyle. Personalized skincare, tailored to you—because your skin deserves a solution as individual as you are.',
+          style: Theme.of(context).textTheme.bodyLarge,
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 32),
+        _buildActionButton(context, isDarkMode),
+        const SizedBox(height: 40),
+        _buildCircularProductDisplay(isDarkMode),
+      ],
+    );
+  }
+
+  Widget _buildLandscapeLayout(BuildContext context, bool isDarkMode) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Expanded(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                'Custom Skincare,\nPowered by Your\nAnswers',
+                style: Theme.of(context).textTheme.displayLarge,
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              Text(
+                'We listen to your unique skin story through a comprehensive survey, crafting precise wellness products that match your exact skin type, concerns, and lifestyle.',
+                style: Theme.of(context).textTheme.bodyLarge,
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 32),
+              _buildActionButton(context, isDarkMode),
+            ],
+          ),
+        ),
+        Expanded(
+          child: _buildCircularProductDisplay(isDarkMode),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildActionButton(BuildContext context, bool isDarkMode) {
+    return Hero(
+      tag: 'blend_button',
+      child: ElevatedButton(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const SurveyScreen1(),
+            ),
+          );
+        },
+        style: ElevatedButton.styleFrom(
+          foregroundColor: isDarkMode ? Colors.black : Colors.white,
+          backgroundColor: isDarkMode ? Colors.white : Colors.black87,
+          padding: const EdgeInsets.symmetric(
+            horizontal: 32,
+            vertical: 16,
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(30),
+          ),
+        ),
+        child: const Text('Design My Unique Blend'),
+      ),
     );
   }
 
@@ -132,7 +184,7 @@ class HomePage extends StatelessWidget {
             },
           ),
           Image.asset(
-            'assets/Dark Glass Bottle Mocha 1.png',
+            'assets/images/Dark Glass Bottle Mocha 1.png',
             width: 900,
             height: 900,
           ),

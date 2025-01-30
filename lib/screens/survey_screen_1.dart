@@ -34,6 +34,7 @@ class _SurveyScreenState extends State<SurveyScreen1> {
     return Scaffold(
       body: Container(
         decoration: AppTheme.getGradientBackground(context),
+        constraints: const BoxConstraints.expand(),
         child: SafeArea(
           child: SingleChildScrollView(
             child: Padding(

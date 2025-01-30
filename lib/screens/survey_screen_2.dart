@@ -159,17 +159,17 @@ class _SurveyScreen2State extends State<SurveyScreen2> {
       {
         'title': 'URBAN',
         'description': 'Polluted, high-stress environment',
-        'image': 'assets/city.png',
+        'image': 'assets/images/city.png',
       },
       {
         'title': 'TROPICAL',
         'description': 'Humid, warm climate',
-        'image': 'assets/tropical.png',
+        'image': 'assets/images/tropical.png',
       },
       {
         'title': 'MODERATE',
         'description': 'Moderate, changing seasons',
-        'image': 'assets/moderate.png',
+        'image': 'assets/images/moderate.png',
       },
     ];
 

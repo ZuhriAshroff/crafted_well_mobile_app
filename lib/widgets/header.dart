@@ -48,7 +48,7 @@ class HeaderSection extends StatelessWidget {
         children: [
           // Logo on the left
           Image.asset(
-            'assets/Crafted Well Logo (2).png',
+            'assets/images/Crafted Well Logo (2).png',
             height: 100,
           ),
           Row(

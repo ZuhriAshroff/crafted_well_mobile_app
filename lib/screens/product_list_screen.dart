@@ -39,7 +39,7 @@ class ProductListScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Your Recommended Products'),
+        title: const Text('Your Recommended Product'),
         backgroundColor: Colors.transparent,
         elevation: 0,
       ),
