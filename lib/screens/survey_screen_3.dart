@@ -278,16 +278,7 @@ class _SurveyScreen3State extends State<SurveyScreen3> {
 
                       // Next Button
                       ElevatedButton(
-                        onPressed: () {
-                          StatusPopup.show(
-                            context,
-                            message: 'Your action was successful!',
-                            isSuccess: true,
-                            onClose: () {
-                              _handleNavigation();
-                            },
-                          );
-                        },
+                        onPressed: _handleNavigation,
                         style: ElevatedButton.styleFrom(
                           backgroundColor:
                               Theme.of(context).primaryColor.withOpacity(0.2),

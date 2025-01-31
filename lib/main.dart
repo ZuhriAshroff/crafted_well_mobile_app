@@ -1,3 +1,4 @@
+import 'package:crafted_well_mobile_app/screens/auth_screen.dart';
 import 'package:crafted_well_mobile_app/screens/homepage.dart';
 import 'package:crafted_well_mobile_app/theme/theme.dart';
 import 'package:flutter/material.dart';
@@ -25,14 +26,10 @@ class _CraftedWellState extends State<CraftedWell> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Skincare App',
-      theme: AppTheme.lightTheme,
-      darkTheme: AppTheme.darkTheme,
-      themeMode: _themeMode,
-      home: HomePage(
-        onThemeModeChanged: toggleTheme,
-        currentThemeMode: _themeMode,
-      ),
-    );
+        title: 'Skincare App',
+        theme: AppTheme.lightTheme,
+        darkTheme: AppTheme.darkTheme,
+        themeMode: _themeMode,
+        home: AuthScreen());
   }
 }

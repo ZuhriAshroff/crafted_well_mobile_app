@@ -3,6 +3,7 @@ import 'package:crafted_well_mobile_app/screens/survey_screen_1.dart';
 import 'package:crafted_well_mobile_app/theme/theme.dart';
 import 'package:crafted_well_mobile_app/widgets/bottom_nav.dart';
 import 'package:crafted_well_mobile_app/widgets/header.dart';
+import 'package:crafted_well_mobile_app/widgets/preloader_widget.dart';
 import 'package:flutter/material.dart';
 
 class HomePage extends StatelessWidget {
@@ -128,13 +129,34 @@ class HomePage extends StatelessWidget {
     return Hero(
       tag: 'blend_button',
       child: ElevatedButton(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const SurveyScreen1(),
+        onPressed: () async {
+          // Make onPressed async
+          // Show loading screen
+          Navigator.of(context).push(
+            PageRouteBuilder(
+              opaque: false,
+              pageBuilder: (context, animation, secondaryAnimation) {
+                return const SurveyLoader(
+                  message: "Preparing your personalized survey...",
+                );
+              },
             ),
           );
+
+          // Add a small delay to show the animation
+          await Future.delayed(const Duration(milliseconds: 1500));
+
+          // Remove the loader and navigate to survey
+          if (context.mounted) {
+            // Check if context is still valid
+            Navigator.of(context).pop(); // Remove loader
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const SurveyScreen1(),
+              ),
+            );
+          }
         },
         style: ElevatedButton.styleFrom(
           foregroundColor: isDarkMode ? Colors.black : Colors.white,
