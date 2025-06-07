@@ -29,11 +29,10 @@ class AppTheme {
       scaffoldBackgroundColor: Colors.white,
       fontFamily: 'Roboto',
       textTheme: TextTheme(
-        // Define the text theme using our custom styles
+        // Define the text theme
         displayLarge: mainHeading.copyWith(color: Colors.black87),
         bodyLarge: bodyText.copyWith(color: Colors.black54),
       ),
-      // Add other theme configurations as needed
     );
   }
 
@@ -48,7 +47,6 @@ class AppTheme {
         displayLarge: mainHeading.copyWith(color: Colors.white),
         bodyLarge: bodyText.copyWith(color: Colors.white70),
       ),
-      // Add other theme configurations as needed
     );
   }
 

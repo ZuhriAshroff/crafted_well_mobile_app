@@ -1,0 +1,42 @@
+{
+    "app_info": {
+        "name": "Crafted Well",
+        "version": "1.0.0",
+        "offline_mode": true,
+        "last_sync": "2024-12-01T10:00:00Z"
+    },
+    "skin_types": [
+        {
+            "id": "dry",
+            "name": "Dry Skin",
+            "description": "Lacks natural oils, feels tight"
+        },
+        {
+            "id": "oily",
+            "name": "Oily Skin",
+            "description": "Excess sebum production"
+        },
+        {
+            "id": "combination",
+            "name": "Combination Skin",
+            "description": "Mix of oily and dry areas"
+        },
+        {
+            "id": "sensitive",
+            "name": "Sensitive Skin",
+            "description": "Easily irritated, reactive"
+        }
+    ],
+    "external_data_sample": [
+        {
+            "id": 1,
+            "title": "Skincare Tips - Offline Mode",
+            "body": "When offline, focus on your basic skincare routine with gentle products."
+        },
+        {
+            "id": 2,
+            "title": "Hydration Importance",
+            "body": "Proper hydration is key to healthy skin, even when using offline product data."
+        }
+    ]
+}

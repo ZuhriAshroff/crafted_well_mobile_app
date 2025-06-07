@@ -1,3 +1,4 @@
+import 'package:crafted_well_mobile_app/main.dart';
 import 'package:crafted_well_mobile_app/screens/homepage.dart';
 import 'package:crafted_well_mobile_app/screens/product_list_screen.dart';
 import 'package:crafted_well_mobile_app/theme/theme.dart';
@@ -5,7 +6,6 @@ import 'package:crafted_well_mobile_app/utils/navigation_state.dart';
 import 'package:crafted_well_mobile_app/widgets/popup_widget.dart';
 import 'package:crafted_well_mobile_app/utils/user_manager.dart';
 import 'package:flutter/material.dart';
-import 'package:crafted_well_mobile_app/main.dart';
 
 class AuthScreen extends StatefulWidget {
   final int initialTabIndex;
@@ -53,7 +53,6 @@ class _AuthScreenState extends State<AuthScreen>
                 : Colors.black87,
           ),
           onPressed: () {
-            // Using MaterialApp's default theme mode
             final materialApp =
                 context.findAncestorWidgetOfExactType<MaterialApp>();
             Navigator.of(context).pushAndRemoveUntil(

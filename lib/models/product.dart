@@ -37,6 +37,5 @@ class Product {
         'Plumps skin'
       ],
     ),
-    // Add more sample products...
   ];
 }

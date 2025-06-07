@@ -1,7 +1,5 @@
 import 'dart:math';
 
-import 'package:crafted_well_mobile_app/main.dart';
-import 'package:crafted_well_mobile_app/screens/homepage.dart';
 import 'package:crafted_well_mobile_app/screens/product_list_screen.dart';
 import 'package:crafted_well_mobile_app/screens/thank_you_screen.dart';
 import 'package:crafted_well_mobile_app/theme/theme.dart';
@@ -104,7 +102,6 @@ class _SurveyScreen3State extends State<SurveyScreen3> {
             (route) => false,
           );
         } else {
-          // If not logged in, go to thank you screen
           Navigator.pushAndRemoveUntil(
             context,
             MaterialPageRoute(

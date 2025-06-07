@@ -1,0 +1,46 @@
+{
+    "products": [
+        {
+            "id": "offline_1",
+            "name": "Offline Hydrating Serum",
+            "description": "Emergency offline product - hydrating serum for all skin types",
+            "ingredients": "Hyaluronic Acid, Niacinamide, Aloe Vera",
+            "usage": "Apply 2-3 drops morning and evening",
+            "price": 29.99,
+            "imageAsset": "assets/images/product-image-1.png",
+            "benefits": [
+                "Works offline",
+                "Deep hydration",
+                "Suitable for all skin types"
+            ]
+        },
+        {
+            "id": "offline_2",
+            "name": "Offline Brightening Cream",
+            "description": "Offline backup product - vitamin C brightening cream",
+            "ingredients": "Vitamin C, Kojic Acid, Peptides",
+            "usage": "Apply thin layer morning after cleansing",
+            "price": 34.99,
+            "imageAsset": "assets/images/product-image-2.png",
+            "benefits": [
+                "Brightens skin",
+                "Reduces dark spots",
+                "Available offline"
+            ]
+        },
+        {
+            "id": "offline_3",
+            "name": "Offline Gentle Cleanser",
+            "description": "Cached offline product - gentle daily cleanser",
+            "ingredients": "Ceramides, Glycerin, Chamomile",
+            "usage": "Massage onto damp skin, rinse thoroughly",
+            "price": 19.99,
+            "imageAsset": "assets/images/product-image-3.png",
+            "benefits": [
+                "Gentle cleansing",
+                "Maintains skin barrier",
+                "Offline availability"
+            ]
+        }
+    ]
+}
