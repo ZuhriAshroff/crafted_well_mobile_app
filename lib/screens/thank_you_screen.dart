@@ -1,9 +1,45 @@
+// lib/screens/thank_you_screen.dart
 import 'package:crafted_well_mobile_app/screens/auth_screen.dart';
+import 'package:crafted_well_mobile_app/screens/product_list_screen.dart';
+import 'package:crafted_well_mobile_app/utils/navigation_state.dart';
+import 'package:crafted_well_mobile_app/utils/user_manager.dart';
 import 'package:crafted_well_mobile_app/theme/theme.dart';
 import 'package:flutter/material.dart';
 
-class ThankYouScreen extends StatelessWidget {
+class ThankYouScreen extends StatefulWidget {
   const ThankYouScreen({Key? key}) : super(key: key);
+
+  @override
+  State<ThankYouScreen> createState() => _ThankYouScreenState();
+}
+
+class _ThankYouScreenState extends State<ThankYouScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // IMPORTANT: Mark survey as completed when reaching this screen
+    NavigationState.hasCompletedSurvey = true;
+    print('✅ Survey completed - NavigationState updated');
+
+    // Auto-navigate if user is already logged in
+    _checkAndNavigate();
+  }
+
+  void _checkAndNavigate() {
+    // Small delay to show the thank you screen briefly
+    Future.delayed(Duration(milliseconds: 500), () {
+      if (mounted && UserManager.isLoggedIn) {
+        print('✅ User already logged in - navigating to products');
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const ProductListScreen(),
+          ),
+          (route) => false,
+        );
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -38,14 +74,14 @@ class ThankYouScreen extends StatelessWidget {
                           },
                         ),
 
-                        // Progress Indicator
+                        // Progress Indicator - All complete
                         const SizedBox(height: 20),
                         Row(
                           children: List.generate(
                             4,
                             (index) => Expanded(
                               child: Container(
-                                height: 2,
+                                height: 4,
                                 margin:
                                     const EdgeInsets.symmetric(horizontal: 4),
                                 decoration: BoxDecoration(
@@ -55,6 +91,15 @@ class ThankYouScreen extends StatelessWidget {
                               ),
                             ),
                           ),
+                        ),
+                        SizedBox(height: 8),
+                        Text(
+                          'Survey Complete! ✅',
+                          style:
+                              Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: Theme.of(context).primaryColor,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                         ),
                       ],
                     ),
@@ -96,7 +141,9 @@ class ThankYouScreen extends StatelessWidget {
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 20),
                           child: Text(
-                            'Your personalized skincare profile is ready! Please log in to view your custom recommendations and receive updates via email.',
+                            UserManager.isLoggedIn
+                                ? 'Your personalized skincare profile is ready! Your custom product recommendations are now available.'
+                                : 'Your personalized skincare profile is ready! Please log in to view your custom recommendations.',
                             textAlign: TextAlign.center,
                             style:
                                 Theme.of(context).textTheme.bodyLarge?.copyWith(
@@ -105,6 +152,77 @@ class ThankYouScreen extends StatelessWidget {
                           ),
                         ),
 
+                        const SizedBox(height: 24),
+
+                        // Status indicator
+                        Container(
+                          padding:
+                              EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          decoration: BoxDecoration(
+                            color:
+                                Theme.of(context).primaryColor.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: Theme.of(context)
+                                  .primaryColor
+                                  .withOpacity(0.3),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.assignment_turned_in,
+                                size: 16,
+                                color: Theme.of(context).primaryColor,
+                              ),
+                              SizedBox(width: 8),
+                              Text(
+                                'Survey Completed',
+                                style: TextStyle(
+                                  color: Theme.of(context).primaryColor,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        if (UserManager.isLoggedIn) ...[
+                          SizedBox(height: 16),
+                          Container(
+                            padding: EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: Colors.green.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: Colors.green.withOpacity(0.3),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.verified_user,
+                                  size: 16,
+                                  color: Colors.green,
+                                ),
+                                SizedBox(width: 8),
+                                Text(
+                                  'Logged in as ${UserManager.userName}',
+                                  style: TextStyle(
+                                    color: Colors.green,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+
                         const SizedBox(height: 40),
                       ],
                     ),
@@ -112,49 +230,98 @@ class ThankYouScreen extends StatelessWidget {
                     // Bottom section
                     Column(
                       children: [
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton(
-                            onPressed: () {
-                              Navigator.pushAndRemoveUntil(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      const AuthScreen(initialTabIndex: 0),
+                        if (UserManager.isLoggedIn) ...[
+                          // User is logged in - go directly to products
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton(
+                              onPressed: () {
+                                Navigator.pushAndRemoveUntil(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        const ProductListScreen(),
+                                  ),
+                                  (route) => false,
+                                );
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Theme.of(context).primaryColor,
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 16),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(30),
                                 ),
-                                (route) => false,
-                              );
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Theme.of(context)
-                                  .primaryColor
-                                  .withOpacity(0.2),
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(30),
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const Icon(Icons.shopping_bag,
+                                      color: Colors.white),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'View My Products',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleMedium
+                                        ?.copyWith(
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.white,
+                                        ),
+                                  ),
+                                ],
                               ),
                             ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const Icon(Icons.login_rounded),
-                                const SizedBox(width: 8),
-                                Text(
-                                  'Login to Continue',
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .titleMedium
-                                      ?.copyWith(
-                                        fontWeight: FontWeight.w600,
-                                      ),
+                          ),
+                        ] else ...[
+                          // User needs to log in
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton(
+                              onPressed: () {
+                                Navigator.pushAndRemoveUntil(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        const AuthScreen(initialTabIndex: 0),
+                                  ),
+                                  (route) => false,
+                                );
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Theme.of(context)
+                                    .primaryColor
+                                    .withOpacity(0.2),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 16),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(30),
                                 ),
-                              ],
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const Icon(Icons.login_rounded),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Login to View Products',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleMedium
+                                        ?.copyWith(
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
-                        ),
+                        ],
                         const SizedBox(height: 16),
                         Text(
-                          'Your results will be sent to your email',
+                          UserManager.isLoggedIn
+                              ? 'Your personalized recommendations await!'
+                              : 'Your results will be available after login',
                           style:
                               Theme.of(context).textTheme.bodyMedium?.copyWith(
                                     color: Colors.grey[600],

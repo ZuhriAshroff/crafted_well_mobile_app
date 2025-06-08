@@ -1,3 +1,4 @@
+// lib/screens/auth_screen.dart
 import 'package:crafted_well_mobile_app/main.dart';
 import 'package:crafted_well_mobile_app/screens/homepage.dart';
 import 'package:crafted_well_mobile_app/screens/product_list_screen.dart';
@@ -60,7 +61,6 @@ class _AuthScreenState extends State<AuthScreen>
                 builder: (context) => HomePage(
                   currentThemeMode: materialApp?.themeMode ?? ThemeMode.system,
                   onThemeModeChanged: (ThemeMode mode) {
-                    // Find the CraftedWell ancestor and call its setState
                     final craftedWellState =
                         context.findAncestorStateOfType<State<CraftedWell>>();
                     if (craftedWellState != null &&
@@ -76,7 +76,17 @@ class _AuthScreenState extends State<AuthScreen>
         ),
       ),
       body: Container(
-        decoration: AppTheme.getGradientBackground(context),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Theme.of(context).primaryColor.withOpacity(0.1),
+              Colors.white,
+              Theme.of(context).primaryColor.withOpacity(0.05),
+            ],
+          ),
+        ),
         child: SafeArea(
           child: Column(
             children: [
@@ -110,9 +120,9 @@ class _AuthScreenState extends State<AuthScreen>
               Expanded(
                 child: TabBarView(
                   controller: _tabController,
-                  children: const [
-                    LoginTab(),
-                    RegisterTab(),
+                  children: [
+                    LoginTab(tabController: _tabController),
+                    RegisterTab(tabController: _tabController),
                   ],
                 ),
               ),
@@ -126,7 +136,8 @@ class _AuthScreenState extends State<AuthScreen>
 
 // Login Tab Content
 class LoginTab extends StatefulWidget {
-  const LoginTab({Key? key}) : super(key: key);
+  final TabController tabController;
+  const LoginTab({Key? key, required this.tabController}) : super(key: key);
 
   @override
   State<LoginTab> createState() => _LoginTabState();
@@ -137,6 +148,7 @@ class _LoginTabState extends State<LoginTab> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isPasswordVisible = false;
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -145,61 +157,76 @@ class _LoginTabState extends State<LoginTab> {
     super.dispose();
   }
 
-// In _LoginTabState
-  void _handleLogin() {
+  void _handleLogin() async {
     if (_formKey.currentState?.validate() ?? false) {
-      final success = UserManager.login(
-        _emailController.text,
-        _passwordController.text,
-      );
+      setState(() {
+        _isLoading = true;
+      });
 
-      if (success) {
-        StatusPopup.show(
-          context,
-          message: 'Welcome back! Login successful.',
-          isSuccess: true,
-          onClose: () {
-            // Check if user came from survey
-            if (NavigationState.hasCompletedSurvey) {
-              Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const ProductListScreen(),
-                ),
-                (route) => false,
-              );
-            } else {
-              // Regular homepage navigation
-              Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => HomePage(
-                    currentThemeMode:
-                        Theme.of(context).brightness == Brightness.dark
-                            ? ThemeMode.dark
-                            : ThemeMode.light,
-                    onThemeModeChanged: (ThemeMode mode) {
-                      final craftedWellState =
-                          context.findAncestorStateOfType<State<CraftedWell>>();
-                      if (craftedWellState != null &&
-                          craftedWellState is State<CraftedWell>) {
-                        (craftedWellState as dynamic).toggleTheme(mode);
-                      }
-                    },
-                  ),
-                ),
-                (route) => false,
-              );
-            }
-          },
+      try {
+        final success = await UserManager.login(
+          _emailController.text.trim(),
+          _passwordController.text,
         );
-      } else {
+
+        if (success) {
+          StatusPopup.show(
+            context,
+            message: 'Welcome back to Crafted Well!',
+            isSuccess: true,
+            onClose: () {
+              // Check if user came from survey
+              if (NavigationState.hasCompletedSurvey) {
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const ProductListScreen(),
+                  ),
+                  (route) => false,
+                );
+              } else {
+                // Regular homepage navigation
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => HomePage(
+                      currentThemeMode:
+                          Theme.of(context).brightness == Brightness.dark
+                              ? ThemeMode.dark
+                              : ThemeMode.light,
+                      onThemeModeChanged: (ThemeMode mode) {
+                        final craftedWellState = context
+                            .findAncestorStateOfType<State<CraftedWell>>();
+                        if (craftedWellState != null &&
+                            craftedWellState is State<CraftedWell>) {
+                          (craftedWellState as dynamic).toggleTheme(mode);
+                        }
+                      },
+                    ),
+                  ),
+                  (route) => false,
+                );
+              }
+            },
+          );
+        } else {
+          StatusPopup.show(
+            context,
+            message:
+                'Login failed. Please check your credentials.\n\nDemo credentials:\nEmail: ${UserManager.defaultEmail}\nPassword: ${UserManager.defaultPassword}',
+            isSuccess: false,
+          );
+        }
+      } catch (e) {
         StatusPopup.show(
           context,
-          message:
-              'Invalid credentials.\nUse: user@craftedwell.com\nPassword: qaz!QAZ',
+          message: 'An error occurred. Please try demo credentials.',
           isSuccess: false,
         );
+      } finally {
+        setState(() {
+          _isLoading = false;
+        });
       }
     }
   }
@@ -211,7 +238,7 @@ class _LoginTabState extends State<LoginTab> {
       child: Form(
         key: _formKey,
         child: Card(
-          elevation: 8,
+          elevation: 4,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
@@ -219,6 +246,32 @@ class _LoginTabState extends State<LoginTab> {
             padding: const EdgeInsets.all(24.0),
             child: Column(
               children: [
+                // Demo info
+                Container(
+                  padding: EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.blue.shade200),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.info, color: Colors.blue.shade700, size: 16),
+                      SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'For demo purposes, use:\nEmail: ${UserManager.defaultEmail}\nPassword: ${UserManager.defaultPassword}',
+                          style: TextStyle(
+                            color: Colors.blue.shade700,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(height: 20),
+
                 TextFormField(
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
@@ -269,16 +322,49 @@ class _LoginTabState extends State<LoginTab> {
                     return null;
                   },
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 8),
+
+                // Quick fill button
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: () {
+                      _emailController.text = UserManager.defaultEmail;
+                      _passwordController.text = UserManager.defaultPassword;
+                    },
+                    child: Text(
+                      'Fill Demo Credentials',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Theme.of(context).primaryColor,
+                      ),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 16),
                 ElevatedButton(
-                  onPressed: (_handleLogin),
+                  onPressed: _isLoading ? null : _handleLogin,
                   style: ElevatedButton.styleFrom(
                     minimumSize: const Size(double.infinity, 50),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
-                  child: const Text('LOGIN'),
+                  child: _isLoading
+                      ? Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                            SizedBox(width: 12),
+                            Text('LOGGING IN...'),
+                          ],
+                        )
+                      : const Text('LOGIN'),
                 ),
               ],
             ),
@@ -289,9 +375,10 @@ class _LoginTabState extends State<LoginTab> {
   }
 }
 
-// Register Tab Content (Similar structure to LoginTab)
+// Register Tab Content
 class RegisterTab extends StatefulWidget {
-  const RegisterTab({Key? key}) : super(key: key);
+  final TabController tabController;
+  const RegisterTab({Key? key, required this.tabController}) : super(key: key);
 
   @override
   State<RegisterTab> createState() => _RegisterTabState();
@@ -305,6 +392,7 @@ class _RegisterTabState extends State<RegisterTab> {
   final _confirmPasswordController = TextEditingController();
   bool _isPasswordVisible = false;
   bool _isConfirmPasswordVisible = false;
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -315,6 +403,51 @@ class _RegisterTabState extends State<RegisterTab> {
     super.dispose();
   }
 
+  void _handleRegister() async {
+    if (_formKey.currentState?.validate() ?? false) {
+      setState(() {
+        _isLoading = true;
+      });
+
+      try {
+        final result = await UserManager.register(
+          _nameController.text.trim(),
+          _emailController.text.trim(),
+          _passwordController.text,
+        );
+
+        if (result['success']) {
+          StatusPopup.show(
+            context,
+            message:
+                result['message'] ?? 'Registration successful! Please login.',
+            isSuccess: true,
+            onClose: () {
+              // Switch to login tab
+              widget.tabController.animateTo(0);
+            },
+          );
+        } else {
+          StatusPopup.show(
+            context,
+            message: result['message'] ?? 'Registration failed',
+            isSuccess: false,
+          );
+        }
+      } catch (e) {
+        StatusPopup.show(
+          context,
+          message: 'An error occurred. Please try again.',
+          isSuccess: false,
+        );
+      } finally {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
@@ -322,7 +455,7 @@ class _RegisterTabState extends State<RegisterTab> {
       child: Form(
         key: _formKey,
         child: Card(
-          elevation: 8,
+          elevation: 4,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
@@ -330,6 +463,32 @@ class _RegisterTabState extends State<RegisterTab> {
             padding: const EdgeInsets.all(24.0),
             child: Column(
               children: [
+                // Info message
+                Container(
+                  padding: EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.amber.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.amber.shade200),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.info, color: Colors.amber.shade700, size: 16),
+                      SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'For demo purposes, please use the login tab with provided credentials.',
+                          style: TextStyle(
+                            color: Colors.amber.shade700,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(height: 20),
+
                 TextFormField(
                   controller: _nameController,
                   decoration: const InputDecoration(
@@ -389,8 +548,8 @@ class _RegisterTabState extends State<RegisterTab> {
                     if (value?.isEmpty ?? true) {
                       return 'Please enter your password';
                     }
-                    if (value!.length < 6) {
-                      return 'Password must be at least 6 characters';
+                    if (value!.length < 8) {
+                      return 'Password must be at least 8 characters';
                     }
                     return null;
                   },
@@ -429,29 +588,27 @@ class _RegisterTabState extends State<RegisterTab> {
                 ),
                 const SizedBox(height: 24),
                 ElevatedButton(
-                  onPressed: () {
-                    if (_formKey.currentState?.validate() ?? false) {
-                      StatusPopup.show(
-                        context,
-                        message:
-                            'Registration successful!\nPlease login with demo credentials.',
-                        isSuccess: true,
-                        onClose: () {
-                          // Switch to login tab
-                          final authScreen = context
-                              .findAncestorStateOfType<_AuthScreenState>();
-                          authScreen?._tabController.animateTo(0);
-                        },
-                      );
-                    }
-                  },
+                  onPressed: _isLoading ? null : _handleRegister,
                   style: ElevatedButton.styleFrom(
                     minimumSize: const Size(double.infinity, 50),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
-                  child: const Text('REGISTER'),
+                  child: _isLoading
+                      ? Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                            SizedBox(width: 12),
+                            Text('REGISTERING...'),
+                          ],
+                        )
+                      : const Text('REGISTER'),
                 ),
               ],
             ),
