@@ -28,6 +28,8 @@ dependencies:
   battery_plus: ^5.0.2            # Battery status
   permission_handler: ^11.1.0     # Handle device permissions
   path: ^1.8.3
+  image_picker: ^1.0.4
+
   
   # Optional: Enhanced Authentication
   shared_preferences: ^2.2.2      # Simple local storage for user sessions

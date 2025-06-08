@@ -1,5 +1,8 @@
 // lib/utils/user_manager.dart
+import 'dart:convert';
+
 import 'package:crafted_well_mobile_app/services/auth_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class UserManager {
   // Keep original demo credentials for compatibility
@@ -172,6 +175,47 @@ class UserManager {
       return '🟢 Authenticated User: $currentUserName';
     } else {
       return '🔴 Not Authenticated';
+    }
+  }
+
+  static Map<String, dynamic>? getUserProfile() {
+    return currentUser;
+  }
+
+  // NEW: Get profile image path
+  static String? getProfileImagePath() {
+    return currentUser?['profile_image_path'];
+  }
+
+  // NEW: Check if user has profile image
+  static bool hasProfileImage() {
+    final imagePath = getProfileImagePath();
+    return imagePath != null && imagePath.isNotEmpty;
+  }
+
+  static Future<void> updateUserProfile(
+      Map<String, dynamic> profileData) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+
+      // Get current user data
+      final currentUserJson = prefs.getString('current_user');
+      Map<String, dynamic> currentUser = {};
+
+      if (currentUserJson != null) {
+        currentUser = json.decode(currentUserJson);
+      }
+
+      // Merge with new profile data
+      currentUser.addAll(profileData);
+
+      // Save updated user data
+      await prefs.setString('current_user', json.encode(currentUser));
+
+      print('✅ User profile updated successfully');
+    } catch (e) {
+      print('❌ Error updating user profile: $e');
+      throw e;
     }
   }
 }

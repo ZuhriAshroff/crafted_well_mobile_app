@@ -5,6 +5,7 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:battery_plus/battery_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import 'package:http/http.dart' as http;
@@ -29,8 +30,15 @@ class AppProvider extends ChangeNotifier {
   // Device capabilities
   bool _isOnline = true;
   Position? _location;
-  int _batteryLevel = 0;
+  int _batteryLevel = 100;
   bool _isLoading = false;
+
+  // NEW: Enhanced device impact properties
+  bool _powerSavingMode = false;
+  String _currentClimate = 'unknown';
+  int _apiCallFrequency = 30; // seconds between API calls
+  bool _enableHighAccuracyLocation = true;
+  List<Product> _climateFilteredProducts = [];
 
   // Database
   Database? _database;
@@ -39,18 +47,31 @@ class AppProvider extends ChangeNotifier {
   bool _isUserLoggedIn = false;
   Map<String, dynamic>? _currentUser;
 
-  // SMART GETTERS: Different logic for online vs offline
+  // ENHANCED: Smart getters with climate filtering
   List<Product> get allProducts {
+    List<Product> baseProducts;
+
     if (_isOnline && _isUserLoggedIn) {
       // ONLINE + LOGGED IN: Show API products (personalized)
-      return [..._railwayProducts, ..._customProducts, ..._localProducts];
+      baseProducts = [
+        ..._railwayProducts,
+        ..._customProducts,
+        ..._localProducts
+      ];
     } else if (_isOnline && !_isUserLoggedIn) {
       // ONLINE + NOT LOGGED IN: Show API products + local (no custom)
-      return [..._railwayProducts, ..._localProducts];
+      baseProducts = [..._railwayProducts, ..._localProducts];
     } else {
       // OFFLINE: Show offline JSON + local products only
-      return [..._offlineProducts, ..._localProducts];
+      baseProducts = [..._offlineProducts, ..._localProducts];
     }
+
+    // CLIMATE FILTERING: Show products based on location/climate
+    if (_location != null && _currentClimate != 'unknown') {
+      return _filterProductsByClimate(baseProducts);
+    }
+
+    return baseProducts;
   }
 
   // Individual getters for assignment demonstration
@@ -68,10 +89,16 @@ class AppProvider extends ChangeNotifier {
   bool get isUserLoggedIn => _isUserLoggedIn;
   Map<String, dynamic>? get currentUser => _currentUser;
 
-  // NEW: Check if user can access personalized content
+  // NEW: Enhanced getters for meaningful impact
+  bool get powerSavingMode => _powerSavingMode;
+  String get currentClimate => _currentClimate;
+  int get apiCallFrequency => _apiCallFrequency;
+  List<Product> get climateFilteredProducts => _climateFilteredProducts;
+
+  // Check if user can access personalized content
   bool get canAccessPersonalizedContent => _isOnline && _isUserLoggedIn;
 
-  // NEW: Check if offline mode (for UI messaging)
+  // Check if offline mode (for UI messaging)
   bool get isOfflineMode => !_isOnline;
 
   AppProvider() {
@@ -107,19 +134,69 @@ class AppProvider extends ChangeNotifier {
     }
   }
 
+  // NEW: Filter products based on climate
+  List<Product> _filterProductsByClimate(List<Product> products) {
+    switch (_currentClimate) {
+      case 'tropical':
+        // Prioritize hydrating, oil-free products for humid climates
+        return products
+                .where((p) =>
+                    p.description.toLowerCase().contains('hydrat') ||
+                    p.description.toLowerCase().contains('oil-free') ||
+                    p.description.toLowerCase().contains('lightweight') ||
+                    p.name.toLowerCase().contains('serum'))
+                .toList() +
+            products
+                .where((p) =>
+                    !p.description.toLowerCase().contains('hydrat') &&
+                    !p.description.toLowerCase().contains('oil-free') &&
+                    !p.name.toLowerCase().contains('serum'))
+                .toList();
+
+      case 'dry':
+        // Prioritize moisturizing, barrier-repair products
+        return products
+                .where((p) =>
+                    p.description.toLowerCase().contains('moistur') ||
+                    p.description.toLowerCase().contains('barrier') ||
+                    p.description.toLowerCase().contains('repair') ||
+                    p.name.toLowerCase().contains('cream'))
+                .toList() +
+            products
+                .where((p) =>
+                    !p.description.toLowerCase().contains('moistur') &&
+                    !p.name.toLowerCase().contains('cream'))
+                .toList();
+
+      case 'urban':
+        // Prioritize anti-pollution, antioxidant products
+        return products
+                .where((p) =>
+                    p.description.toLowerCase().contains('antioxidant') ||
+                    p.description.toLowerCase().contains('protect') ||
+                    p.description.toLowerCase().contains('pollution') ||
+                    p.description.toLowerCase().contains('vitamin c'))
+                .toList() +
+            products;
+
+      default:
+        return products;
+    }
+  }
+
   // Load data when online
   Future<void> _loadOnlineData() async {
     await Future.wait([
       loadRailwayData(),
-      loadExternalMakeupData(), // Changed from JSONPlaceholder
+      loadExternalMakeupData(),
       loadCustomProducts(),
-      loadLocalJsonData(), // Always load as fallback
+      loadLocalJsonData(),
     ]);
   }
 
   // Load data when offline
   Future<void> _loadOfflineData() async {
-    await loadLocalJsonData(); // Load offline JSON products
+    await loadLocalJsonData();
     print('📴 Offline mode: Loaded local JSON products only');
   }
 
@@ -144,7 +221,6 @@ class AppProvider extends ChangeNotifier {
 
       print('🔄 AppProvider: Auth state synced - isLoggedIn: $_isUserLoggedIn');
       if (_isUserLoggedIn && _isOnline) {
-        // Load custom products when user logs in
         await loadCustomProducts();
       }
 
@@ -171,11 +247,9 @@ class AppProvider extends ChangeNotifier {
         print('📡 Connectivity changed: $_isOnline');
 
         if (!wasOnline && _isOnline) {
-          // Just came back online - load online data
           print('🔄 Back online - loading API data');
           await _loadOnlineData();
         } else if (wasOnline && !_isOnline) {
-          // Just went offline - ensure offline data is loaded
           print('📴 Gone offline - switching to local data');
           await _loadOfflineData();
         }
@@ -189,10 +263,10 @@ class AppProvider extends ChangeNotifier {
     }
   }
 
-  // Device capabilities (assignment requirement)
+  // ENHANCED: Device capabilities with meaningful impact
   Future<void> _loadDeviceCapabilities() async {
     try {
-      // GPS Location
+      // GPS Location with climate detection
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (serviceEnabled) {
         LocationPermission permission = await Geolocator.checkPermission();
@@ -202,32 +276,123 @@ class AppProvider extends ChangeNotifier {
 
         if (permission != LocationPermission.denied &&
             permission != LocationPermission.deniedForever) {
-          _location = await Geolocator.getCurrentPosition();
-          print('✅ GPS location acquired');
+          // Use different accuracy based on battery level
+          LocationAccuracy accuracy = _batteryLevel > 30
+              ? LocationAccuracy.high
+              : LocationAccuracy.medium;
+
+          _location = await Geolocator.getCurrentPosition(
+            desiredAccuracy: accuracy,
+          );
+
+          // Determine climate based on location
+          _currentClimate = _determineClimate(_location!);
+
+          print('✅ GPS location acquired: $_currentClimate climate detected');
         }
       }
 
-      // Battery Level
+      // Battery Level with power management
       final battery = Battery();
       _batteryLevel = await battery.batteryLevel;
+      _updatePowerSavingMode();
 
-      // Listen for battery changes
+      // Listen for battery changes with impact
       battery.onBatteryStateChanged.listen((state) async {
         final newLevel = await battery.batteryLevel;
         if (newLevel != _batteryLevel) {
           _batteryLevel = newLevel;
+          _updatePowerSavingMode();
+          _adjustApiFrequency();
           notifyListeners();
         }
       });
 
-      print('✅ Battery monitoring initialized: $_batteryLevel%');
+      print(
+          '✅ Battery monitoring initialized: $_batteryLevel% (Power saving: $_powerSavingMode)');
       notifyListeners();
     } catch (e) {
       print('❌ Device capabilities error: $e');
     }
   }
 
-  // SQLite Database (assignment requirement)
+  // NEW: Determine climate based on coordinates
+  String _determineClimate(Position position) {
+    final lat = position.latitude;
+    final lng = position.longitude;
+
+    // Tropical zone (between 23.5°N and 23.5°S)
+    if (lat.abs() <= 23.5) {
+      return 'tropical';
+    }
+
+    // Desert/dry regions (rough approximation)
+    if ((lat >= 20 && lat <= 35) || (lat >= -35 && lat <= -20)) {
+      return 'dry';
+    }
+
+    // Urban detection (major cities - simplified)
+    final majorCities = [
+      {'name': 'New York', 'lat': 40.7128, 'lng': -74.0060},
+      {'name': 'London', 'lat': 51.5074, 'lng': -0.1278},
+      {'name': 'Tokyo', 'lat': 35.6762, 'lng': 139.6503},
+      {'name': 'Sydney', 'lat': -33.8688, 'lng': 151.2093},
+      {'name': 'Los Angeles', 'lat': 34.0522, 'lng': -118.2437},
+      {'name': 'Chicago', 'lat': 41.8781, 'lng': -87.6298},
+      {'name': 'Paris', 'lat': 48.8566, 'lng': 2.3522},
+      {'name': 'Berlin', 'lat': 52.5200, 'lng': 13.4050},
+    ];
+
+    for (final city in majorCities) {
+      final distance = Geolocator.distanceBetween(
+          lat, lng, city['lat']! as double, city['lng']! as double);
+      if (distance < 100000) {
+        // Within 100km of major city
+        return 'urban';
+      }
+    }
+
+    // Default to moderate climate
+    return 'moderate';
+  }
+
+  // NEW: Update power saving mode based on battery
+  void _updatePowerSavingMode() {
+    final oldMode = _powerSavingMode;
+    _powerSavingMode = _batteryLevel <= 20;
+
+    if (oldMode != _powerSavingMode) {
+      print(
+          '🔋 Power saving mode ${_powerSavingMode ? 'ENABLED' : 'DISABLED'}');
+      _adjustApiFrequency();
+
+      if (_powerSavingMode) {
+        _enableHighAccuracyLocation = false;
+      }
+    }
+  }
+
+  // NEW: Adjust API call frequency based on battery
+  void _adjustApiFrequency() {
+    final oldFrequency = _apiCallFrequency;
+
+    if (_batteryLevel <= 10) {
+      _apiCallFrequency = 300; // 5 minutes
+    } else if (_batteryLevel <= 20) {
+      _apiCallFrequency = 120; // 2 minutes
+    } else if (_batteryLevel <= 50) {
+      _apiCallFrequency = 60; // 1 minute
+    } else {
+      _apiCallFrequency = 30; // 30 seconds
+    }
+
+    if (oldFrequency != _apiCallFrequency) {
+      print(
+          '📡 API frequency adjusted: ${_apiCallFrequency}s (Battery: $_batteryLevel%)');
+    }
+  }
+
+  // SQLite Database
   Future<void> _initDatabase() async {
     try {
       final databasesPath = await getDatabasesPath();
@@ -253,11 +418,18 @@ class AppProvider extends ChangeNotifier {
     }
   }
 
-  // Railway API integration (assignment requirement)
+  // ENHANCED: Railway API with battery-aware frequency
   Future<void> loadRailwayData() async {
     if (!_isOnline) {
       print('📴 Offline - skipping Railway API');
       _railwayProducts = [];
+      return;
+    }
+
+    // Skip API call if in extreme power saving mode
+    if (_batteryLevel <= 5) {
+      print('🔋 Extreme power saving - skipping Railway API');
+      _railwayProducts = await _loadCachedProducts();
       return;
     }
 
@@ -267,10 +439,15 @@ class AppProvider extends ChangeNotifier {
 
       if (token != null && !token.startsWith('demo_')) {
         headers['Authorization'] = 'Bearer $token';
-        print('💰 Using authenticated Railway API call');
+        print(
+            '💰 Using authenticated Railway API call (Battery: $_batteryLevel%)');
       } else {
-        print('💡 Using public Railway API call (demo mode)');
+        print('💡 Using public Railway API call (Battery: $_batteryLevel%)');
       }
+
+      // Shorter timeout in power saving mode
+      final timeout =
+          _powerSavingMode ? Duration(seconds: 5) : Duration(seconds: 10);
 
       final response = await http
           .get(
@@ -278,7 +455,7 @@ class AppProvider extends ChangeNotifier {
                 'https://crafted-well-laravel.up.railway.app/api/products'),
             headers: headers,
           )
-          .timeout(Duration(seconds: 10));
+          .timeout(timeout);
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -301,13 +478,16 @@ class AppProvider extends ChangeNotifier {
                     benefits: [
                       'Custom formulation',
                       'Professional grade',
-                      'Skin type specific'
+                      'Skin type specific',
+                      if (_currentClimate != 'unknown')
+                        'Optimized for $_currentClimate climate'
                     ],
                   ))
               .toList();
 
           await _cacheProducts(_railwayProducts);
-          print('✅ Railway API loaded: ${_railwayProducts.length} products');
+          print(
+              '✅ Railway API loaded: ${_railwayProducts.length} products (Climate: $_currentClimate)');
         }
       } else {
         print('⚠️ Railway API returned status: ${response.statusCode}');
@@ -320,10 +500,16 @@ class AppProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // NEW: External Makeup API data (relevant to skincare/beauty)
+  // External Makeup API data
   Future<void> loadExternalMakeupData() async {
     if (!_isOnline) {
       print('📴 Offline - skipping external makeup API');
+      return;
+    }
+
+    // Skip in extreme power saving mode
+    if (_batteryLevel <= 10) {
+      print('🔋 Power saving - skipping external makeup API');
       return;
     }
 
@@ -331,12 +517,11 @@ class AppProvider extends ChangeNotifier {
       final response = await http
           .get(Uri.parse(
               'http://makeup-api.herokuapp.com/api/v1/products.json?product_type=foundation&brand=maybelline'))
-          .timeout(Duration(seconds: 10));
+          .timeout(Duration(seconds: _powerSavingMode ? 5 : 10));
 
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
 
-        // Take only first 6 products
         _externalMakeupData = data
             .take(6)
             .map((item) => {
@@ -358,7 +543,7 @@ class AppProvider extends ChangeNotifier {
     }
   }
 
-  // FIXED: Custom Products API integration (use actual API response names)
+  // Custom Products API integration
   Future<void> loadCustomProducts() async {
     if (!_isUserLoggedIn) {
       print('🔐 Not logged in - skipping custom products');
@@ -380,9 +565,9 @@ class AppProvider extends ChangeNotifier {
     }
 
     try {
-      print('💰 Loading custom products from SSP API');
+      print('💰 Creating new custom product via API');
 
-      final response = await http.get(
+      final getResponse = await http.get(
         Uri.parse(
             'https://crafted-well-laravel.up.railway.app/api/custom-products'),
         headers: {
@@ -391,48 +576,50 @@ class AppProvider extends ChangeNotifier {
         },
       ).timeout(Duration(seconds: 10));
 
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
+      if (getResponse.statusCode == 200) {
+        final getData = json.decode(getResponse.body);
 
-        if (data['success'] == true && data['data'] != null) {
-          final List<dynamic> customProductsJson = data['data'];
+        if (getData['status'] == 'success' &&
+            getData['data'] != null &&
+            getData['data'].isNotEmpty) {
+          final List<dynamic> existingProducts = getData['data'];
 
-          _customProducts = customProductsJson
+          _customProducts = existingProducts
               .map((json) => Product(
-                    id: 'custom_${json['id']}',
-                    // FIXED: Use actual API response name
+                    id: 'custom_${json['id'] ?? json['custom_product_id']}',
                     name: json['name'] ??
                         json['product_name'] ??
                         'Custom Product',
-                    description:
-                        json['description'] ?? 'Custom formulated product',
+                    description: json['description'] ??
+                        'Custom formulated product based on your survey',
                     ingredients: json['ingredients'] is List
                         ? (json['ingredients'] as List).join(', ')
                         : json['ingredients']?.toString() ??
-                            'Custom ingredients',
+                            'Custom formulated ingredients',
                     usage:
                         json['usage'] ?? 'Apply as directed for your skin type',
-                    price: double.tryParse(json['price']?.toString() ?? '0') ??
-                        59.99,
-                    imageAsset: 'assets/images/product-image-1.png',
+                    price: double.tryParse(json['price']?.toString() ??
+                            json['total_price']?.toString() ??
+                            '0') ??
+                        79.99,
+                    imageAsset: 'assets/images/product-image-2.png',
                     benefits: [
-                      'Custom formulated',
-                      'Based on your survey',
-                      'Personalized for your skin'
+                      'Custom formulated for you',
+                      'Based on your survey responses',
+                      'Personalized skincare solution',
+                      if (_currentClimate != 'unknown')
+                        'Adapted for $_currentClimate climate'
                     ],
                   ))
               .toList();
 
-          print('✅ Custom products loaded: ${_customProducts.length} products');
+          print(
+              '✅ Existing custom products loaded: ${_customProducts.length} products');
         } else {
-          print('⚠️ No custom products found - creating one');
-          await _createCustomProduct(token);
+          await _createNewCustomProduct(token);
         }
-      } else if (response.statusCode == 401) {
-        print('🔐 Authentication required for custom products');
       } else {
-        print('⚠️ Custom products API returned: ${response.statusCode}');
-        await _createDemoCustomProducts();
+        await _createNewCustomProduct(token);
       }
     } catch (e) {
       print('❌ Custom products API error: $e');
@@ -441,10 +628,24 @@ class AppProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Create a custom product via API
-  Future<void> _createCustomProduct(String token) async {
+  // Create a new custom product with actual survey data
+  Future<void> _createNewCustomProduct(String token) async {
     try {
-      print('🎨 Creating custom product via SSP API');
+      print('🎨 Creating new custom product with survey data');
+
+      final surveyData = {
+        'base_product_id': 1,
+        'profile_data': {
+          'skin_type': 'combination',
+          'skin_concerns': ['hydration', 'anti-aging'],
+          'environmental_factors':
+              _currentClimate != 'unknown' ? _currentClimate : 'urban',
+          'allergies': ['fragrances']
+        },
+        'product_name': 'Your Personalized Skincare Formula',
+        'custom_notes':
+            'Formulated based on your survey responses for combination skin in $_currentClimate environment'
+      };
 
       final response = await http
           .post(
@@ -455,47 +656,48 @@ class AppProvider extends ChangeNotifier {
               'Accept': 'application/json',
               'Authorization': 'Bearer $token',
             },
-            body: json.encode({
-              'name': 'Your Personalized Serum',
-              'description':
-                  'Custom serum formulated based on your survey responses',
-              'base_formulation_id': 1,
-              'custom_ingredients': [
-                {'ingredient_id': 1, 'amount': 5.0},
-                {'ingredient_id': 2, 'amount': 3.0},
-              ],
-              'skin_concerns': ['hydration', 'anti-aging'],
-              'skin_type': 'combination',
-              'price': 79.99,
-            }),
+            body: json.encode(surveyData),
           )
-          .timeout(Duration(seconds: 10));
+          .timeout(Duration(seconds: 15));
 
-      if (response.statusCode == 201) {
+      if (response.statusCode == 201 || response.statusCode == 200) {
         final data = json.decode(response.body);
-        print('✅ Custom product created via API');
 
-        // Add the newly created product with actual API response name
-        final customProduct = Product(
-          id: 'custom_${data['data']['id']}',
-          name: data['data']['name'] ??
-              data['data']['product_name'] ??
-              'Your Personalized Serum',
-          description:
-              data['data']['description'] ?? 'Custom formulated product',
-          ingredients: 'Hyaluronic Acid, Niacinamide, Vitamin C',
-          usage: 'Apply 2-3 drops to clean skin morning and evening',
-          price: data['data']['price']?.toDouble() ?? 79.99,
-          imageAsset: 'assets/images/product-image-2.png',
-          benefits: [
-            'Custom formulated for you',
-            'Based on your survey answers',
-            'Targets your specific concerns'
-          ],
-        );
+        if (data['status'] == 'success' && data['data'] != null) {
+          final productData = data['data'];
+          final customProduct = Product(
+            id: 'custom_${productData['id'] ?? productData['custom_product_id']}',
+            name: productData['name'] ??
+                productData['product_name'] ??
+                'Your Personalized Formula',
+            description: productData['description'] ??
+                'Custom formulated based on your survey responses',
+            ingredients: productData['ingredients'] is List
+                ? (productData['ingredients'] as List).join(', ')
+                : productData['ingredients']?.toString() ??
+                    'Hyaluronic Acid, Niacinamide, Ceramides',
+            usage:
+                productData['usage'] ?? 'Apply 2-3 drops morning and evening',
+            price: double.tryParse(productData['price']?.toString() ??
+                    productData['total_price']?.toString() ??
+                    '0') ??
+                89.99,
+            imageAsset: 'assets/images/product-image-2.png',
+            benefits: [
+              'Custom formulated for your skin type',
+              'Based on your survey answers',
+              'Targets your specific concerns',
+              'Professional-grade ingredients',
+              if (_currentClimate != 'unknown')
+                'Optimized for $_currentClimate climate'
+            ],
+          );
 
-        _customProducts.add(customProduct);
-        print('✅ Custom product added to list');
+          _customProducts = [customProduct];
+          print('✅ Custom product added to app');
+        } else {
+          throw Exception('Invalid API response format');
+        }
       } else {
         print('⚠️ Custom product creation failed: ${response.statusCode}');
         await _createDemoCustomProducts();
@@ -506,14 +708,14 @@ class AppProvider extends ChangeNotifier {
     }
   }
 
-  // Create demo custom products for demo mode
+  // Create demo custom products
   Future<void> _createDemoCustomProducts() async {
     _customProducts = [
       Product(
         id: 'custom_demo_1',
         name: 'Your Personalized Hydra-Glow Serum',
         description:
-            'Custom serum formulated based on your survey: combination skin with hydration concerns',
+            'Custom serum formulated based on your survey: combination skin with hydration concerns${_currentClimate != 'unknown' ? ' for $_currentClimate climate' : ''}',
         ingredients:
             'Hyaluronic Acid (5%), Niacinamide (3%), Vitamin C (2%), Ceramides',
         usage:
@@ -524,7 +726,9 @@ class AppProvider extends ChangeNotifier {
           'Formulated for your combination skin',
           'Targets hydration and texture',
           'Based on your survey responses',
-          'Clinically tested ingredients'
+          'Clinically tested ingredients',
+          if (_currentClimate != 'unknown')
+            'Adapted for $_currentClimate climate'
         ],
       ),
     ];
@@ -532,7 +736,7 @@ class AppProvider extends ChangeNotifier {
     print('✅ Demo custom products created: ${_customProducts.length} products');
   }
 
-  // Load offline JSON data (fallback when offline)
+  // Load offline JSON data
   Future<void> loadLocalJsonData() async {
     try {
       final String jsonString =
@@ -566,7 +770,7 @@ class AppProvider extends ChangeNotifier {
     }
   }
 
-  // Cache and database methods
+  // Cache products to database
   Future<void> _cacheProducts(List<Product> products) async {
     if (_database == null) return;
 
@@ -590,6 +794,7 @@ class AppProvider extends ChangeNotifier {
     }
   }
 
+  // Load cached products from database
   Future<List<Product>> _loadCachedProducts() async {
     if (_database == null) return [];
 
@@ -618,7 +823,7 @@ class AppProvider extends ChangeNotifier {
     }
   }
 
-  // Save survey data (assignment requirement)
+  // Save survey data
   Future<void> saveSurveyData(
       String skinType, String concerns, String environment) async {
     if (_database == null) return;
@@ -637,7 +842,7 @@ class AppProvider extends ChangeNotifier {
     }
   }
 
-  // Refresh all data based on current state
+  // Refresh all data
   Future<void> refreshData() async {
     _isLoading = true;
     notifyListeners();
@@ -652,21 +857,75 @@ class AppProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Get device info summary for UI display
+  // NEW: Get battery status message for UI
+  String getBatteryStatusMessage() {
+    if (_batteryLevel <= 5) {
+      return '🔋 Critical battery - Limited functionality';
+    } else if (_batteryLevel <= 15) {
+      return '🔋 Low battery - Power saving mode active';
+    } else if (_batteryLevel <= 30) {
+      return '🔋 Moderate battery - Reduced API frequency';
+    } else {
+      return '🔋 Good battery - Full functionality';
+    }
+  }
+
+  // NEW: Get climate recommendation message
+  String getClimateRecommendation() {
+    switch (_currentClimate) {
+      case 'tropical':
+        return '🌴 Tropical climate detected - Showing lightweight, oil-free products';
+      case 'dry':
+        return '🏜️ Dry climate detected - Showing moisturizing, barrier-repair products';
+      case 'urban':
+        return '🏢 Urban environment detected - Showing anti-pollution products';
+      case 'moderate':
+        return '🌤️ Moderate climate detected - Showing balanced skincare products';
+      default:
+        return '📍 Enable location for climate-optimized recommendations';
+    }
+  }
+
+  // ENHANCED: Device status summary with meaningful info
   String getDeviceStatusSummary() {
     final List<String> status = [];
 
     if (_batteryLevel > 0) {
-      status.add('🔋 ${_batteryLevel}%');
+      final batteryIcon = _batteryLevel <= 15
+          ? '🔴'
+          : _batteryLevel <= 30
+              ? '🟡'
+              : '🟢';
+      status.add('$batteryIcon $_batteryLevel%');
     }
 
     status.add(_isOnline ? '🌐 Online' : '📴 Offline');
 
     if (_location != null) {
-      status.add('📍 GPS');
+      final climateIcon = _getClimateIcon(_currentClimate);
+      status.add('$climateIcon $_currentClimate');
+    }
+
+    if (_powerSavingMode) {
+      status.add('⚡ Power Save');
     }
 
     return status.join(' • ');
+  }
+
+  String _getClimateIcon(String climate) {
+    switch (climate) {
+      case 'tropical':
+        return '🌴';
+      case 'dry':
+        return '🏜️';
+      case 'urban':
+        return '🏢';
+      case 'moderate':
+        return '🌤️';
+      default:
+        return '📍';
+    }
   }
 
   // NEW: Get data source context message for UI
@@ -674,9 +933,37 @@ class AppProvider extends ChangeNotifier {
     if (!_isOnline) {
       return '📴 Offline Mode: Showing cached products';
     } else if (_isUserLoggedIn) {
-      return '🌐 Online: Personalized recommendations';
+      return '🌐 Online: Personalized recommendations${_currentClimate != 'unknown' ? ' for $_currentClimate climate' : ''}';
     } else {
       return '🌐 Online: General products (login for personalized)';
     }
+  }
+
+  // NEW: Force battery level for testing
+  void setBatteryLevelForTesting(int level) {
+    _batteryLevel = level;
+    _updatePowerSavingMode();
+    _adjustApiFrequency();
+    notifyListeners();
+    print('🧪 Test: Battery set to $_batteryLevel%');
+  }
+
+  // NEW: Force location for testing
+  void setLocationForTesting(double lat, double lng) {
+    _location = Position(
+      latitude: lat,
+      longitude: lng,
+      timestamp: DateTime.now(),
+      accuracy: 10.0,
+      altitude: 0.0,
+      heading: 0.0,
+      speed: 0.0,
+      speedAccuracy: 0.0,
+      altitudeAccuracy: 0.0,
+      headingAccuracy: 0.0,
+    );
+    _currentClimate = _determineClimate(_location!);
+    notifyListeners();
+    print('🧪 Test: Location set to $lat, $lng ($_currentClimate climate)');
   }
 }

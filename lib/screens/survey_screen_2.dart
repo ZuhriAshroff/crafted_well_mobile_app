@@ -345,23 +345,27 @@ class _SurveyScreen2State extends State<SurveyScreen2>
                                 ),
                                 child: Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
+                                  mainAxisSize: MainAxisSize.min,
                                   children: [
                                     Icon(
                                       Icons.arrow_back,
                                       color: Theme.of(context).primaryColor,
-                                      size: 20,
+                                      size: 18,
                                     ),
-                                    SizedBox(width: 8),
-                                    Text(
-                                      'Back',
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .titleMedium
-                                          ?.copyWith(
-                                            fontWeight: FontWeight.w600,
-                                            color:
-                                                Theme.of(context).primaryColor,
-                                          ),
+                                    SizedBox(width: 6),
+                                    Flexible(
+                                      child: Text(
+                                        'Back',
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .titleMedium
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.w600,
+                                              color: Theme.of(context)
+                                                  .primaryColor,
+                                            ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
                                     ),
                                   ],
                                 ),
@@ -435,12 +439,12 @@ class _SurveyScreen2State extends State<SurveyScreen2>
                                     borderRadius: BorderRadius.circular(28),
                                   ),
                                 ),
-                                child: FittedBox(
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Text(
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Flexible(
+                                      child: Text(
                                         'Continue',
                                         style: Theme.of(context)
                                             .textTheme
@@ -451,27 +455,27 @@ class _SurveyScreen2State extends State<SurveyScreen2>
                                                   ? Colors.white
                                                   : Colors.grey[600],
                                             ),
+                                        overflow: TextOverflow.ellipsis,
                                       ),
-                                      const SizedBox(width: 8),
-                                      Container(
-                                        padding: EdgeInsets.all(4),
-                                        decoration: BoxDecoration(
-                                          color: selectedEnvironment != null
-                                              ? Colors.white.withOpacity(0.2)
-                                              : Colors.grey.withOpacity(0.3),
-                                          borderRadius:
-                                              BorderRadius.circular(12),
-                                        ),
-                                        child: Icon(
-                                          Icons.arrow_forward,
-                                          color: selectedEnvironment != null
-                                              ? Colors.white
-                                              : Colors.grey[600],
-                                          size: 16,
-                                        ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Container(
+                                      padding: EdgeInsets.all(4),
+                                      decoration: BoxDecoration(
+                                        color: selectedEnvironment != null
+                                            ? Colors.white.withOpacity(0.2)
+                                            : Colors.grey.withOpacity(0.3),
+                                        borderRadius: BorderRadius.circular(12),
                                       ),
-                                    ],
-                                  ),
+                                      child: Icon(
+                                        Icons.arrow_forward,
+                                        color: selectedEnvironment != null
+                                            ? Colors.white
+                                            : Colors.grey[600],
+                                        size: 16,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ),

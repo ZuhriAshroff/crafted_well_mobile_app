@@ -15,45 +15,17 @@ class ProductListScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<AppProvider>(
       builder: (context, provider, child) {
-        // NEW LOGIC: Allow offline access without survey requirement
-        final bool requiresSurveyAndLogin = provider.isOnline;
-
-        // Check if user came from survey and is logged in (only when online)
-        if (requiresSurveyAndLogin &&
-            (!NavigationState.hasCompletedSurvey || !UserManager.isLoggedIn)) {
-          return Scaffold(
-            body: Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.lock_outline,
-                      size: 64,
-                      color: Theme.of(context).brightness == Brightness.dark
-                          ? Colors.white54
-                          : Colors.black54,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Complete the survey first to view your personalized products',
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.titleLarge,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            bottomNavigationBar: const BottomNavigation(),
-          );
-        }
+        // MODIFIED LOGIC: Always allow access to offline products
+        // Only show personalized products when online and survey completed
+        final bool showPersonalizedProducts = provider.isOnline &&
+            NavigationState.hasCompletedSurvey &&
+            UserManager.isLoggedIn;
 
         return Scaffold(
           appBar: AppBar(
-            title: Text(provider.isOfflineMode
-                ? 'Demo Products (Offline)'
-                : 'Your Recommended Products'),
+            title: Text(showPersonalizedProducts
+                ? 'Your Recommended Products'
+                : 'Demo Products'),
             backgroundColor: Colors.transparent,
             elevation: 0,
             actions: [
@@ -65,7 +37,8 @@ class ProductListScreen extends StatelessWidget {
                   color: Theme.of(context).cardColor,
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                    color: provider.isOnline ? Colors.green : Colors.orange,
+                    color:
+                        showPersonalizedProducts ? Colors.green : Colors.orange,
                     width: 1,
                   ),
                 ),
@@ -73,13 +46,17 @@ class ProductListScreen extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(
-                      provider.isOnline ? Icons.cloud_done : Icons.cloud_off,
+                      showPersonalizedProducts
+                          ? Icons.person
+                          : Icons.visibility,
                       size: 16,
-                      color: provider.isOnline ? Colors.green : Colors.orange,
+                      color: showPersonalizedProducts
+                          ? Colors.green
+                          : Colors.orange,
                     ),
                     SizedBox(width: 6),
                     Text(
-                      provider.getDeviceStatusSummary(),
+                      showPersonalizedProducts ? 'Personalized' : 'Demo Mode',
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w500,
@@ -93,44 +70,187 @@ class ProductListScreen extends StatelessWidget {
           ),
           body: Column(
             children: [
-              // Data source context message
+              // Show upgrade message when not showing personalized products
+              if (!showPersonalizedProducts) ...[
+                Container(
+                  margin: EdgeInsets.all(16),
+                  padding: EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [Colors.blue.shade50, Colors.blue.shade100],
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.blue.shade200),
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.info_outline, color: Colors.blue.shade700),
+                          SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Viewing Demo Products',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.blue.shade700,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: 8),
+                      Text(
+                        provider.isOnline
+                            ? 'Complete the survey to get personalized product recommendations based on your skin type and environment.'
+                            : 'Connect to internet and complete the survey to get personalized product recommendations.',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.blue.shade600,
+                        ),
+                      ),
+                      if (!provider.isOnline ||
+                          !NavigationState.hasCompletedSurvey) ...[
+                        SizedBox(height: 12),
+                        ElevatedButton.icon(
+                          onPressed: () {
+                            if (!provider.isOnline) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content:
+                                      Text('Please connect to internet first'),
+                                  backgroundColor: Colors.orange,
+                                ),
+                              );
+                            } else {
+                              // Navigate back to home/survey start - adjust route as needed
+                              Navigator.pushNamedAndRemoveUntil(
+                                context,
+                                '/', // or whatever your home/survey route is
+                                (route) => false,
+                              );
+                            }
+                          },
+                          icon: Icon(Icons.quiz, size: 16),
+                          label: Text(
+                            !provider.isOnline
+                                ? 'Connect & Take Survey'
+                                : 'Take Survey',
+                            style: TextStyle(fontSize: 12),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.blue.shade600,
+                            foregroundColor: Colors.white,
+                            padding: EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 8),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+
+              // Enhanced status bar with battery and climate impact
               Container(
                 padding: EdgeInsets.all(16),
-                color: provider.isOfflineMode
-                    ? Colors.orange.withOpacity(0.1)
-                    : Theme.of(context).primaryColor.withOpacity(0.05),
+                color: showPersonalizedProducts
+                    ? Theme.of(context).primaryColor.withOpacity(0.05)
+                    : Colors.grey.withOpacity(0.1),
                 child: Column(
                   children: [
+                    // Battery impact indicator
+                    if (provider.batteryLevel <= 20) ...[
+                      Container(
+                        padding: EdgeInsets.all(12),
+                        margin: EdgeInsets.only(bottom: 12),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.orange),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.battery_alert,
+                                color: Colors.orange, size: 20),
+                            SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                provider.getBatteryStatusMessage(),
+                                style: TextStyle(
+                                  color: Colors.orange[700],
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+
+                    // Climate recommendation
+                    if (provider.location != null) ...[
+                      Container(
+                        padding: EdgeInsets.all(12),
+                        margin: EdgeInsets.only(bottom: 12),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.blue),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.location_on,
+                                color: Colors.blue, size: 20),
+                            SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                provider.getClimateRecommendation(),
+                                style: TextStyle(
+                                  color: Colors.blue[700],
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+
+                    // Data source info
                     Row(
                       children: [
                         Icon(
-                            provider.isOfflineMode
-                                ? Icons.cloud_off
-                                : Icons.analytics,
+                            showPersonalizedProducts
+                                ? Icons.analytics
+                                : Icons.storage,
                             size: 16,
-                            color: provider.isOfflineMode
-                                ? Colors.orange
-                                : Theme.of(context).primaryColor),
+                            color: showPersonalizedProducts
+                                ? Theme.of(context).primaryColor
+                                : Colors.grey[700]),
                         SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            provider.isOfflineMode
-                                ? 'Offline Mode: Demo Products Available'
-                                : provider.getDataSourceMessage(),
+                            showPersonalizedProducts
+                                ? provider.getDataSourceMessage()
+                                : 'Showing Demo/Offline Products - No Survey Required',
                             style: Theme.of(context)
                                 .textTheme
                                 .labelMedium
                                 ?.copyWith(
                                   fontWeight: FontWeight.bold,
-                                  color: provider.isOfflineMode
-                                      ? Colors.orange
-                                      : Theme.of(context).primaryColor,
+                                  color: showPersonalizedProducts
+                                      ? Theme.of(context).primaryColor
+                                      : Colors.grey[700],
                                 ),
                           ),
                         ),
                       ],
                     ),
-                    if (!provider.isOfflineMode) ...[
+                    if (showPersonalizedProducts) ...[
                       SizedBox(height: 12),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -147,13 +267,22 @@ class ProductListScreen extends StatelessWidget {
                               Colors.purple),
                         ],
                       ),
+                    ] else ...[
+                      SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          _buildDataSourceChip('Demo Products',
+                              provider.allProducts.length, Colors.grey),
+                        ],
+                      ),
                     ],
                   ],
                 ),
               ),
 
-              // External Makeup API horizontal scroll (online only)
-              if (provider.isOnline &&
+              // External Makeup API horizontal scroll (only when showing personalized products)
+              if (showPersonalizedProducts &&
                   provider.externalMakeupData.isNotEmpty) ...[
                 Container(
                   padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
@@ -228,44 +357,6 @@ class ProductListScreen extends StatelessWidget {
                 Divider(color: Theme.of(context).dividerColor.withOpacity(0.3)),
               ],
 
-              // Offline mode message
-              if (provider.isOfflineMode) ...[
-                Container(
-                  margin: EdgeInsets.all(16),
-                  padding: EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.orange.shade50,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.orange.shade200),
-                  ),
-                  child: Column(
-                    children: [
-                      Row(
-                        children: [
-                          Icon(Icons.info, color: Colors.orange.shade700),
-                          SizedBox(width: 8),
-                          Text(
-                            'Browsing Offline',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.orange.shade700,
-                            ),
-                          ),
-                        ],
-                      ),
-                      SizedBox(height: 8),
-                      Text(
-                        'You\'re viewing demo products while offline. Connect to internet for personalized recommendations based on your survey.',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.orange.shade600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-
               // Main product list
               Expanded(
                 child: provider.isLoading
@@ -275,12 +366,12 @@ class ProductListScreen extends StatelessWidget {
                           children: [
                             CircularProgressIndicator(),
                             SizedBox(height: 16),
-                            Text('Loading your products...'),
+                            Text('Loading products...'),
                             SizedBox(height: 8),
                             Text(
-                              provider.isOnline
-                                  ? 'Fetching from API...'
-                                  : 'Loading offline data...',
+                              showPersonalizedProducts
+                                  ? 'Fetching personalized recommendations...'
+                                  : 'Loading demo products...',
                               style: Theme.of(context).textTheme.bodySmall,
                             ),
                           ],
@@ -299,9 +390,7 @@ class ProductListScreen extends StatelessWidget {
                                         Theme.of(context).textTheme.titleLarge),
                                 SizedBox(height: 8),
                                 Text(
-                                  provider.isOnline
-                                      ? 'Check your API connection'
-                                      : 'No offline products cached',
+                                  'No products found to display',
                                   style: Theme.of(context).textTheme.bodyMedium,
                                   textAlign: TextAlign.center,
                                 ),
@@ -323,9 +412,10 @@ class ProductListScreen extends StatelessWidget {
                             },
                             child: ListView.builder(
                               padding: const EdgeInsets.all(16),
-                              itemCount: provider.allProducts.length,
+                              itemCount: _getSortedProducts(provider).length,
                               itemBuilder: (context, index) {
-                                final product = provider.allProducts[index];
+                                final product =
+                                    _getSortedProducts(provider)[index];
                                 return Padding(
                                   padding: const EdgeInsets.only(bottom: 16),
                                   child: ProductCard(
@@ -333,6 +423,7 @@ class ProductListScreen extends StatelessWidget {
                                     index: index,
                                     dataSource: _getProductDataSource(
                                         product, provider),
+                                    isDemo: !showPersonalizedProducts,
                                   ),
                                 );
                               },
@@ -347,6 +438,26 @@ class ProductListScreen extends StatelessWidget {
     );
   }
 
+  // Sort products to show custom products first
+  List<Product> _getSortedProducts(AppProvider provider) {
+    final List<Product> sortedProducts = List.from(provider.allProducts);
+
+    // Sort by data source priority: Custom > SSP API > Local/Demo
+    sortedProducts.sort((a, b) {
+      int getPriority(Product product) {
+        if (provider.customProducts.any((p) => p.id == product.id))
+          return 1; // Custom first
+        if (provider.railwayProducts.any((p) => p.id == product.id))
+          return 2; // SSP API second
+        return 3; // Local/Demo/Others last
+      }
+
+      return getPriority(a).compareTo(getPriority(b));
+    });
+
+    return sortedProducts;
+  }
+
   // Determine which data source this product came from
   String _getProductDataSource(Product product, AppProvider provider) {
     if (provider.railwayProducts.any((p) => p.id == product.id)) {
@@ -354,11 +465,11 @@ class ProductListScreen extends StatelessWidget {
     } else if (provider.customProducts.any((p) => p.id == product.id)) {
       return 'Custom';
     } else if (provider.offlineProducts.any((p) => p.id == product.id)) {
-      return 'Offline JSON';
+      return 'Demo Product';
     } else if (provider.localProducts.any((p) => p.id == product.id)) {
-      return 'Static Data';
+      return 'Demo Product';
     }
-    return 'Unknown';
+    return 'Demo Product';
   }
 
   Widget _buildDataSourceChip(String label, int count, Color color) {
@@ -398,27 +509,29 @@ class ProductCard extends StatelessWidget {
   final Product product;
   final int index;
   final String dataSource;
+  final bool isDemo;
 
   const ProductCard({
     Key? key,
     required this.product,
     required this.index,
     required this.dataSource,
+    this.isDemo = false,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     // Get color for data source badge
     Color getSourceColor() {
+      if (isDemo) return Colors.grey;
+
       switch (dataSource) {
         case 'SSP API':
           return Colors.blue;
         case 'Custom':
           return Colors.red;
-        case 'Offline JSON':
-          return Colors.orange;
-        case 'Static Data':
-          return Colors.green;
+        case 'Demo Product':
+          return Colors.grey;
         default:
           return Colors.grey;
       }
@@ -471,7 +584,7 @@ class ProductCard extends StatelessWidget {
                     ),
                   ),
                 ),
-                // Data source badge (for assignment demonstration)
+                // Data source badge
                 Positioned(
                   top: 12,
                   right: 12,
@@ -482,7 +595,7 @@ class ProductCard extends StatelessWidget {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
-                      dataSource,
+                      isDemo ? 'DEMO' : dataSource,
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 10,
@@ -518,7 +631,7 @@ class ProductCard extends StatelessWidget {
                     children: [
                       Expanded(
                         child: Text(
-                          '\${product.price.toStringAsFixed(2)}',
+                          '\${_formatPrice(product.price)}',
                           style:
                               Theme.of(context).textTheme.titleMedium?.copyWith(
                                     fontWeight: FontWeight.bold,

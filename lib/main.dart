@@ -1,6 +1,7 @@
 // lib/main.dart
 import 'package:crafted_well_mobile_app/screens/auth_screen.dart';
 import 'package:crafted_well_mobile_app/screens/homepage.dart';
+import 'package:crafted_well_mobile_app/screens/user_profile_screen.dart'; // ADD THIS IMPORT
 import 'package:crafted_well_mobile_app/theme/theme.dart';
 import 'package:crafted_well_mobile_app/providers/app_provider.dart';
 import 'package:crafted_well_mobile_app/utils/user_manager.dart';
@@ -42,8 +43,11 @@ class _CraftedWellState extends State<CraftedWell> {
         theme: AppTheme.lightTheme,
         darkTheme: AppTheme.darkTheme,
         themeMode: _themeMode,
-        home: AuthScreen(),
         debugShowCheckedModeBanner: false,
+        routes: {
+          '/': (context) => AuthScreen(),
+          '/profile': (context) => UserProfileScreen(),
+        },
       ),
     );
   }
